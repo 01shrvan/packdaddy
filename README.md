@@ -1,21 +1,38 @@
-# shadcn/ui monorepo template
+# packdaddy
 
-This is a Next.js monorepo template with shadcn/ui.
+Dependency cleanup CLI and landing page.
 
-## Adding components
+## Local CLI testing
 
-To add components to your app, run the following command at the root of your `web` app:
+`packdaddy` is not published to npm yet, so this will fail until release:
 
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+pnpm dlx packdaddy@latest
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+Run the built CLI directly from this repo:
 
-## Using components
+```bash
+pnpm --filter packdaddy build
+node packages/cli/dist/index.js --cwd "../align-dev" --unused --size
+```
 
-To use the components in your app, import them from the `ui` package.
+Install the local build as a global command while developing:
 
-```tsx
-import { Button } from "@workspace/ui/components/button";
+```bash
+pnpm --filter packdaddy build
+pnpm --filter packdaddy link --global
+```
+
+Then run this inside any JavaScript project:
+
+```bash
+packdaddy --unused --outdated --size
+```
+
+## Web app
+
+```bash
+pnpm --filter web dev
+pnpm --filter web build
 ```

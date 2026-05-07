@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
+    "cli:build": "pnpm --filter packdaddy build",
+    "cli:link": "pnpm --filter packdaddy link --global",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",

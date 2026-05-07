@@ -1,69 +1,132 @@
-import { runCommand } from "../exec.js"
-import type { AnalyzerResult, ProjectConfig } from "../types.js"
+import type { AnalyzerItem, AnalyzerResult, PackageJsonShape, ProjectConfig } from "../types.js"
+
+type AuditAdvisory = {
+  id?: number
+  title?: string
+  severity?: string
+  url?: string
+  vulnerable_versions?: string
+}
 
 export async function runAuditAnalyzer(
-  config: ProjectConfig
+  config: ProjectConfig,
 ): Promise<AnalyzerResult> {
-  const command = getAuditCommand(config.packageManager)
+  const dependencies = getDependencies(config.packageJson)
 
-  if (!command) {
+  if (dependencies.length === 0) {
     return {
       name: "audit",
       status: "skipped",
-      summary: `${config.packageManager} audit output is not supported yet.`,
+      summary: "No dependencies found to audit.",
       items: [],
       warnings: [],
     }
   }
 
-  const result = await runCommand(command.command, command.args, config.root)
-  const raw = result.stdout.trim()
+  let response: Response
 
-  if (!raw) {
+  try {
+    response = await fetch(
+      "https://registry.npmjs.org/-/npm/v1/security/advisories/bulk",
+      {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(buildPayload(dependencies)),
+      },
+    )
+  } catch (error) {
     return {
       name: "audit",
       status: "skipped",
-      summary: "Audit returned no JSON output.",
+      summary: "Could not reach the npm audit registry endpoint.",
       items: [],
-      warnings: result.stderr.trim() ? [result.stderr.trim()] : [],
+      warnings: [
+        error instanceof Error ? error.message : "Unknown registry failure.",
+      ],
     }
   }
 
-  const parsed = JSON.parse(raw) as {
-    vulnerabilities?: Record<
-      string,
-      { severity?: string; via?: unknown[]; range?: string }
-    >
-    metadata?: { vulnerabilities?: Record<string, number> }
+  if (!response.ok) {
+    return {
+      name: "audit",
+      status: "skipped",
+      summary: "Could not reach the npm audit registry endpoint.",
+      items: [],
+      warnings: [`Registry request failed with status ${response.status}.`],
+    }
   }
-  const vulnerabilities = parsed.vulnerabilities ?? {}
-  const items = Object.entries(vulnerabilities).map(([name, value]) => ({
-    name,
-    severity: value.severity,
-    detail: value.range,
-  }))
+
+  const body = (await response.json()) as Record<string, AuditAdvisory[]>
+  const items = Object.entries(body).flatMap(([name, advisories]) =>
+    advisories.map((advisory) => {
+      const current = dependencies.find(([dependencyName]) => dependencyName === name)?.[1]
+
+      return {
+        name,
+        current,
+        severity: advisory.severity,
+        detail: [advisory.title, advisory.vulnerable_versions]
+          .filter(Boolean)
+          .join(" · "),
+      } satisfies AnalyzerItem
+    }),
+  )
+
+  if (items.length === 0) {
+    return {
+      name: "audit",
+      status: "ok",
+      summary: "No vulnerabilities reported.",
+      items: [],
+      warnings: [],
+    }
+  }
 
   return {
     name: "audit",
-    status: items.length > 0 ? "warning" : "ok",
-    summary:
-      items.length > 0
-        ? `${items.length} vulnerable packages reported.`
-        : "No vulnerabilities reported.",
+    status: "warning",
+    summary: `${items.length} vulnerable package advisories reported.`,
     items,
-    warnings: result.stderr.trim() ? [result.stderr.trim()] : [],
+    warnings: [
+      "Audit only reflects packages available in the public npm advisory registry.",
+    ],
   }
 }
 
-function getAuditCommand(packageManager: ProjectConfig["packageManager"]) {
-  switch (packageManager) {
-    case "npm":
-      return { command: "npm", args: ["audit", "--json"] }
-    case "pnpm":
-      return { command: "pnpm", args: ["audit", "--json"] }
-    case "yarn":
-      return { command: "yarn", args: ["npm", "audit", "--json"] }
-    case "bun":
-      return undefined
+function getDependencies(packageJson: PackageJsonShape) {
+  return Object.entries({
+    ...packageJson.dependencies,
+    ...packageJson.devDependencies,
+    ...packageJson.optionalDependencies,
+  }).filter(([, current]) => !isLocalVersion(current))
+}
+
+function buildPayload(dependencies: [string, string][]) {
+  const payload: Record<string, string[]> = {}
+
+  for (const [name, version] of dependencies) {
+    payload[name] = unique([...(payload[name] ?? []), normalizeRange(version)])
   }
+
+  return payload
+}
+
+function isLocalVersion(value: string) {
+  return (
+    value.startsWith("workspace:") ||
+    value.startsWith("file:") ||
+    value.startsWith("link:") ||
+    value.startsWith("patch:")
+  )
+}
+
+function normalizeRange(value: string) {
+  return value.replace(/^[~^]/, "").trim()
+}
+
+function unique(values: string[]) {
+  return [...new Set(values)]
 }
