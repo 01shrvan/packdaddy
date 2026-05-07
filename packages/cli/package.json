@@ -1,0 +1,28 @@
+{
+  "name": "packdaddy",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Dependency cleanup CLI for modern JavaScript projects.",
+  "bin": {
+    "packdaddy": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}
