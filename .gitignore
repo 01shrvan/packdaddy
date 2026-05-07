@@ -30,6 +30,7 @@ dist
 
 # Debug
 npm-debug.log*
+.next-dev-*.log
 
 # Misc
 .DS_Store

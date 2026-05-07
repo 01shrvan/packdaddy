@@ -1,328 +1,182 @@
 "use client"
 
+import {
+  ArrowRight02Icon,
+  CheckmarkCircle02Icon,
+  Copy01Icon,
+  CopyCheckIcon,
+  GithubIcon,
+  NpmIcon,
+  PackageRemoveIcon,
+  PackageSearchIcon,
+  SecurityWarningIcon,
+  TerminalIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { Button } from "@workspace/ui/components/button"
 import Link from "next/link"
-import type { ReactNode, Ref, RefObject } from "react"
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 
-function CodeBlock({ code, ref }: { code: string; ref?: Ref<HTMLDivElement> }) {
-  const [flash, setFlash] = useState(false)
+type Hugeicon = Parameters<typeof HugeiconsIcon>[0]["icon"]
 
+const signals: { label: string; value: string; icon: Hugeicon }[] = [
+  { label: "unused", value: "find dead packages", icon: PackageRemoveIcon },
+  { label: "audit", value: "surface risk", icon: SecurityWarningIcon },
+  { label: "json", value: "ship to CI", icon: CheckmarkCircle02Icon },
+]
+
+function Icon({
+  icon,
+  size = 16,
+  className,
+}: {
+  icon: Hugeicon
+  size?: number
+  className?: string
+}) {
   return (
-    <div
-      ref={ref}
-      className={`flex items-center justify-between gap-2 border border-dashed bg-muted px-3 py-2 font-mono text-xs transition-colors hover:border-foreground/30 ${flash ? "border-foreground/50" : "border-border"}`}
-    >
-      <code className="truncate text-foreground">{code}</code>
-      <button
-        type="button"
-        onClick={() => {
-          navigator.clipboard.writeText(code)
-          setFlash(true)
-          setTimeout(() => setFlash(false), 300)
-        }}
-        className="cursor-pointer text-[9px] text-muted-foreground uppercase transition-all hover:scale-105 hover:text-foreground active:scale-95"
-      >
-        {flash ? "done" : "copy"}
-      </button>
-    </div>
+    <HugeiconsIcon
+      icon={icon}
+      size={size}
+      strokeWidth={1.7}
+      className={className}
+    />
   )
 }
 
-function CornerBrackets() {
+function CopyCommand({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false)
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(code)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 500)
+      }}
+      className="group flex w-full items-center justify-between gap-4 border border-dashed bg-muted/70 px-3 py-2.5 font-mono text-xs transition hover:border-foreground/40"
+    >
+      <code className="truncate">{code}</code>
+      <span className="text-muted-foreground transition group-hover:text-foreground">
+        <Icon icon={copied ? CopyCheckIcon : Copy01Icon} size={15} />
+      </span>
+    </button>
+  )
+}
+
+function CornerDots() {
   return (
     <>
-      <span className="absolute right-0 bottom-0 h-2.5 w-2.5 border-r border-b border-foreground/30 transition-colors duration-300 group-hover:border-foreground" />
-      <span className="absolute bottom-0 left-0 h-2.5 w-2.5 border-b border-l border-foreground/30 transition-colors duration-300 group-hover:border-foreground" />
-      <span className="absolute top-0 right-0 h-2.5 w-2.5 border-t border-r border-foreground/30 transition-colors duration-300 group-hover:border-foreground" />
-      <span className="absolute top-0 left-0 h-2.5 w-2.5 border-t border-l border-foreground/30 transition-colors duration-300 group-hover:border-foreground" />
+      <span className="absolute top-0 left-0 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-background" />
+      <span className="absolute top-0 right-0 size-2 translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-background" />
+      <span className="absolute bottom-0 left-0 size-2 -translate-x-1/2 translate-y-1/2 rounded-full border border-border bg-background" />
+      <span className="absolute right-0 bottom-0 size-2 translate-x-1/2 translate-y-1/2 rounded-full border border-border bg-background" />
     </>
   )
 }
 
-function StepCard({
-  index,
-  label,
-  title,
-  children,
-  centered,
-  bottomExtra,
-}: {
-  index: number
-  label: string
-  title: string
-  children: ReactNode
-  centered?: boolean
-  bottomExtra?: ReactNode
-}) {
-  return (
-    <div className="group relative flex min-h-52 flex-col overflow-hidden bg-background transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_8px_rgba(255,255,255,0.02)]">
-      <div className="absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full border border-border bg-background font-mono text-[8px]">
-        {index + 1}
-      </div>
-      <div className="pointer-events-none absolute top-0 right-0 left-0 z-[1] px-4 pt-0.5">
-        <span className="font-mono text-[8px] text-muted-foreground">
-          Step {index + 1} - {label}
-        </span>
-        <h2 className="font-pixel-square -mt-0.5 mb-0 text-sm tracking-tight text-foreground">
-          {title}
-        </h2>
-      </div>
-      <div
-        className={
-          centered
-            ? "mt-2 grid flex-1 grid-rows-[1fr_auto_1fr] p-4 pt-10"
-            : "flex flex-1 flex-col p-4 pt-10"
-        }
-      >
-        <div
-          className={
-            centered
-              ? "flex flex-col justify-center gap-2"
-              : "flex flex-1 flex-col justify-center gap-2"
-          }
-        >
-          {children}
-        </div>
-        {bottomExtra && <div className="mt-2 self-start">{bottomExtra}</div>}
-      </div>
-      <CornerBrackets />
-    </div>
-  )
-}
-
-type Rect = {
-  left: number
-  right: number
-  cx: number
-  cy: number
-}
-
-function getRect(el: HTMLElement, container: HTMLElement): Rect {
-  const er = el.getBoundingClientRect()
-  const cr = container.getBoundingClientRect()
-  const left = er.left - cr.left
-  const right = left + er.width
-  const top = er.top - cr.top
-  const bottom = top + er.height
-
-  return {
-    left,
-    right,
-    cx: (left + right) / 2,
-    cy: (top + bottom) / 2,
-  }
-}
-
-function GridConnectors({
-  containerRef,
-  refs,
-}: {
-  containerRef: RefObject<HTMLDivElement | null>
-  refs: readonly [
-    RefObject<HTMLDivElement | null>,
-    RefObject<HTMLDivElement | null>,
-  ]
-}) {
-  const [line, setLine] = useState<{
-    x1: number
-    y1: number
-    x2: number
-    y2: number
-  } | null>(null)
-
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) {
-      return
-    }
-
-    const update = () => {
-      const [leftEl, rightEl] = refs.map((r) => r.current)
-      if (!leftEl || !rightEl) {
-        return
-      }
-
-      const left = getRect(leftEl, container)
-      const right = getRect(rightEl, container)
-      setLine({
-        x1: left.right,
-        y1: left.cy,
-        x2: right.left,
-        y2: right.cy,
-      })
-    }
-
-    requestAnimationFrame(update)
-
-    const ro = new ResizeObserver(update)
-    ro.observe(container)
-    refs.forEach((nodeRef) => {
-      if (nodeRef.current) {
-        ro.observe(nodeRef.current)
-      }
-    })
-    window.addEventListener("resize", update)
-
-    return () => {
-      ro.disconnect()
-      window.removeEventListener("resize", update)
-    }
-  }, [refs, containerRef])
-
-  if (!line) {
-    return null
-  }
-
-  return (
-    <svg
-      className="pointer-events-none absolute inset-0 z-10 hidden overflow-visible md:block"
-      width="100%"
-      height="100%"
-    >
-      <title>packdaddy scan connector</title>
-      <line
-        x1={line.x1}
-        y1={line.y1}
-        x2={line.x2}
-        y2={line.y2}
-        stroke="var(--border)"
-        strokeDasharray="4 3"
-        strokeWidth={1}
-      />
-      <circle
-        cx={line.x1}
-        cy={line.y1}
-        r={4}
-        fill="var(--background)"
-        stroke="var(--border)"
-        strokeWidth={1}
-      />
-      <circle
-        cx={line.x2}
-        cy={line.y2}
-        r={4}
-        fill="var(--background)"
-        stroke="var(--border)"
-        strokeWidth={1}
-      />
-    </svg>
-  )
-}
-
 export default function Page() {
-  const gridRef = useRef<HTMLDivElement>(null)
-  const ref0 = useRef<HTMLDivElement>(null)
-  const ref1 = useRef<HTMLDivElement>(null)
-  const nodeRefs = [ref0, ref1] as const
-
   return (
-    <div className="mx-auto flex h-screen w-full max-w-7xl flex-col overflow-hidden border-x">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col border-x bg-background">
       <nav className="font-pixel-square relative flex items-center justify-between px-4 py-4">
-        <Link href="/" className="transition-opacity hover:opacity-80">
+        <Link href="/" className="flex items-center gap-2">
+          <Icon icon={PackageSearchIcon} size={17} />
           packdaddy
         </Link>
-        <div className="absolute bottom-0 left-0 z-10 size-2.5 -translate-x-1/2 translate-y-1/2 rounded-full border border-border bg-background" />
-        <div className="absolute right-0 bottom-0 z-10 size-2.5 translate-x-1/2 translate-y-1/2 rounded-full border border-border bg-background" />
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <a
+            href="https://github.com/01shrvan/packdaddy"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub"
+            className="grid size-8 place-items-center border border-border transition hover:text-foreground"
+          >
+            <Icon icon={GithubIcon} size={16} />
+          </a>
+          <a
+            href="https://www.npmjs.com/package/packdaddy"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="npm"
+            className="grid size-8 place-items-center border border-border transition hover:text-foreground"
+          >
+            <Icon icon={NpmIcon} size={16} />
+          </a>
+        </div>
         <div className="absolute bottom-0 left-1/2 w-screen -translate-x-1/2 border-b" />
       </nav>
 
-      <main className="flex flex-1 items-center justify-center overflow-hidden px-6">
-        <div className="w-full max-w-5xl">
+      <section className="grid flex-1 place-items-center px-5 py-14">
+        <div className="w-full max-w-3xl">
           <div className="mb-8 text-center">
-            <span className="text-[8px] tracking-[0.2em] text-muted-foreground uppercase">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
               package.json intelligence
             </span>
-            <h1 className="font-pixel-square mt-1 text-2xl">
-              Audit dependencies without opening five tabs
+            <h1 className="font-pixel-square mt-3 text-4xl leading-tight sm:text-6xl">
+              packdaddy
             </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-              Find unused packages, outdated versions, audit warnings, and size
-              signals from one focused CLI flow built for messy JavaScript
-              projects.
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-muted-foreground">
+              A small CLI for unused deps, outdated versions, audit warnings,
+              and size signals.
             </p>
           </div>
 
-          <div
-            ref={gridRef}
-            className="relative grid grid-cols-1 gap-px border border-border bg-border md:grid-cols-2"
-          >
-            <StepCard
-              index={0}
-              label="Inspect"
-              title="Scan the current project"
-              centered
-            >
-              <CodeBlock ref={ref0} code="pnpm dlx packdaddy@latest" />
-              <CodeBlock code="packdaddy --unused --outdated" />
-            </StepCard>
-
-            <StepCard
-              index={1}
-              label="Decide"
-              title="Review dependency findings"
-              centered
-              bottomExtra={
-                <a
-                  href="https://github.com/01shrvan/packdaddy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group/cta relative inline-block w-fit"
-                >
-                  <Button
-                    variant="outline"
-                    className="relative h-8 cursor-pointer overflow-hidden rounded-none border-dashed px-3 py-1 focus-visible:ring-0"
-                  >
-                    <span className="shine pointer-events-none absolute -top-1/2 -left-full z-20 h-[200%] w-3/4 skew-x-[-20deg] bg-linear-to-r from-transparent via-white/40 to-transparent" />
-                    <span className="flex items-center gap-1.5 text-[9px] font-medium text-foreground transition-all duration-300 group-hover/cta:gap-2.5">
-                      View on GitHub
-                      <span className="text-[11px]">-&gt;</span>
+          <div className="relative border border-border bg-border">
+            <CornerDots />
+            <div className="grid gap-px md:grid-cols-[1.1fr_0.9fr]">
+              <div className="bg-background p-4 sm:p-5">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <span className="font-mono text-[9px] text-muted-foreground uppercase">
+                      run
                     </span>
-                  </Button>
-                  <span className="absolute right-0 bottom-0 h-2.5 w-2.5 border-r border-b border-foreground/30 transition-colors duration-300 group-hover/cta:border-foreground" />
-                  <span className="absolute bottom-0 left-0 h-2.5 w-2.5 border-b border-l border-foreground/30 transition-colors duration-300 group-hover/cta:border-foreground" />
-                  <span className="absolute top-0 right-0 h-2.5 w-2.5 border-t border-r border-foreground/30 transition-colors duration-300 group-hover/cta:border-foreground" />
-                  <span className="absolute top-0 left-0 h-2.5 w-2.5 border-t border-l border-foreground/30 transition-colors duration-300 group-hover/cta:border-foreground" />
-                </a>
-              }
-            >
-              <CodeBlock ref={ref1} code="packdaddy --json --audit" />
-            </StepCard>
+                    <h2 className="font-pixel-square text-lg">scan a repo</h2>
+                  </div>
+                  <Icon icon={TerminalIcon} size={22} />
+                </div>
+                <div className="grid gap-2">
+                  <CopyCommand code="pnpm dlx packdaddy@latest" />
+                  <CopyCommand code="packdaddy --cwd ../my-app --json" />
+                </div>
+              </div>
 
-            <GridConnectors containerRef={gridRef} refs={nodeRefs} />
+              <div className="grid gap-px bg-border">
+                {signals.map((signal) => (
+                  <div
+                    className="flex items-center justify-between gap-4 bg-background p-4"
+                    key={signal.label}
+                  >
+                    <div>
+                      <span className="font-mono text-[9px] text-muted-foreground uppercase">
+                        {signal.label}
+                      </span>
+                      <p className="mt-1 text-sm">{signal.value}</p>
+                    </div>
+                    <span className="text-muted-foreground">
+                      <Icon icon={signal.icon} size={19} />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-col items-center justify-between gap-3 text-sm text-muted-foreground sm:flex-row">
+            <span>built for pnpm, npm, yarn, and bun projects</span>
+            <Button
+              asChild
+              variant="outline"
+              className="h-8 rounded-none border-dashed"
+            >
+              <a href="https://github.com/01shrvan/packdaddy">
+                source
+                <Icon icon={ArrowRight02Icon} size={14} />
+              </a>
+            </Button>
           </div>
         </div>
-      </main>
-
-      <footer className="font-pixel-square relative px-4 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-sm text-muted-foreground">
-            dependency cleanup for modern JS repos
-          </span>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <a
-              href="https://github.com/01shrvan/packdaddy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline-offset-4 transition-colors hover:text-foreground hover:underline"
-            >
-              github
-            </a>
-            <span className="text-3xl leading-none">&middot;</span>
-            <a
-              href="https://www.npmjs.com/package/packdaddy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline-offset-4 transition-colors hover:text-foreground hover:underline"
-            >
-              npm
-            </a>
-          </div>
-        </div>
-        <div className="absolute top-0 left-0 z-10 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-background" />
-        <div className="absolute top-0 right-0 z-10 size-2.5 translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-background" />
-        <div className="absolute top-0 left-1/2 w-screen -translate-x-1/2 border-t" />
-      </footer>
-    </div>
+      </section>
+    </main>
   )
 }
