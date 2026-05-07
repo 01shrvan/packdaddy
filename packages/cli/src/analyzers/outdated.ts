@@ -85,7 +85,7 @@ async function getLatestVersion(name: string) {
     `https://registry.npmjs.org/${encodePackageName(name)}/latest`,
     {
       headers: {
-        accept: "application/vnd.npm.install-v1+json",
+        accept: "application/json",
       },
     },
   )

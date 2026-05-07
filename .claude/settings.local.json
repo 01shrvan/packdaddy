@@ -9,7 +9,16 @@
       "Bash(node packages/cli/dist/index.js --all)",
       "Bash(node packages/cli/dist/index.js --cwd apps/web --all)",
       "WebFetch(domain:magicwand.advtszn.xyz)",
-      "WebFetch(domain:axiom.co)"
+      "WebFetch(domain:axiom.co)",
+      "WebFetch(domain:opentui.com)",
+      "WebSearch",
+      "Bash(pnpm --filter packdaddy add @clack/prompts)",
+      "Bash(pnpm --filter packdaddy build)",
+      "Bash(npm whoami *)",
+      "Bash(npm publish *)",
+      "Bash(pnpm publish *)",
+      "Bash(npm token *)",
+      "Bash(npm config *)"
     ]
   }
 }

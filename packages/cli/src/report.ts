@@ -1,141 +1,151 @@
+import { log, note } from "@clack/prompts"
 import type { AnalyzerItem, AnalyzerResult, ScanReport } from "./types.js"
 
-export function renderJson(report: ScanReport) {
-  return `${JSON.stringify(
-    {
-      ...report,
-      generatedAt: new Date().toISOString(),
-    },
-    null,
-    2,
-  )}\n`
+export function renderJson(report: ScanReport): string {
+  return `${JSON.stringify({ ...report, generatedAt: new Date().toISOString() }, null, 2)}\n`
 }
 
-export function renderReport(report: ScanReport) {
-  const counts = getCounts(report.results)
-  const lines = [
-    color("packdaddy", "magenta", true),
-    color("dependency scan", "dim"),
-    "",
-    `project: ${report.project.name}`,
-    `manager: ${report.project.packageManager}${report.project.lockfile ? ` (${report.project.lockfile})` : ""}`,
-    `workspace: ${report.project.isWorkspace ? "yes" : "no"}`,
-    `summary: ${counts.warning} warning${plural(counts.warning)}, ${counts.error} error${plural(counts.error)}, ${counts.skipped} skipped`,
-    "",
-  ]
+export function renderResult(result: AnalyzerResult): void {
+  const name = result.name
 
-  for (const result of report.results) {
-    lines.push(...renderResult(result), "")
+  if (result.status === "ok") {
+    if (result.items.length > 0) {
+      const lines: string[] = [dim(result.summary), ""]
+      lines.push(...buildTable(result.items, result.name))
+      if (result.warnings.length > 0) {
+        lines.push("")
+        for (const w of result.warnings) lines.push(dim(`  ↳ ${w}`))
+      }
+      note(lines.join("\n"), name)
+    } else {
+      log.success(`${b(name)}  ${dim(result.summary)}`)
+    }
+    return
   }
 
-  lines.push(color("tip: use --json for machine-readable output", "dim"))
-  return `${lines.join("\n").trimEnd()}\n`
-}
-
-function renderResult(result: AnalyzerResult) {
-  const lines = [
-    sectionTitle(result.name),
-    `  ${statusLabel(result.status)} ${result.summary}`,
-  ]
-
-  for (const item of result.items.slice(0, 12)) {
-    lines.push(`  - ${renderItem(item)}`)
+  if (result.status === "skipped") {
+    log.step(`${b(name)}  ${dim(result.summary)}`)
+    return
   }
 
-  for (const warning of result.warnings) {
-    lines.push(`  ! ${warning}`)
+  if (result.status === "error") {
+    log.error(`${b(name)}  ${result.summary}`)
+    for (const w of result.warnings) log.message(`  ${dim(w)}`)
+    return
   }
 
-  return lines
-}
+  // warning — render items in a note box
+  const lines: string[] = [dim(result.summary)]
 
-function renderItem(item: AnalyzerItem) {
-  const parts = [color(item.name, "white", true)]
-
-  if (item.current || item.wanted || item.latest) {
-    const versions = [item.current, item.wanted, item.latest]
-      .filter(Boolean)
-      .join(" -> ")
-    if (versions) {
-      parts.push(color(versions, "magenta"))
+  if (result.items.length > 0) {
+    lines.push("")
+    lines.push(...buildTable(result.items, result.name))
+    if (result.items.length > 15) {
+      lines.push("")
+      lines.push(dim(`  … ${result.items.length - 15} more not shown`))
     }
   }
 
-  if (item.sizeBytes) {
-    parts.push(color(formatBytes(item.sizeBytes), "green"))
+  if (result.warnings.length > 0) {
+    lines.push("")
+    for (const w of result.warnings) {
+      lines.push(dim(`  ↳ ${w}`))
+    }
   }
 
-  if (item.severity) {
-    parts.push(color(item.severity, "yellow"))
-  }
-
-  if (item.detail) {
-    parts.push(color(item.detail, "dim"))
-  }
-
-  return parts.join("  ")
+  note(lines.join("\n"), name)
 }
 
-function formatBytes(bytes: number) {
-  const units = ["B", "KB", "MB", "GB"]
-  let value = bytes
-  let unitIndex = 0
+/* ── table builder ── */
 
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024
-    unitIndex += 1
-  }
+function buildTable(items: AnalyzerItem[], analyzer: string): string[] {
+  const MAX = 15
+  const raw = items.slice(0, MAX).map((item) => rawCells(item, analyzer))
+  const widths = colWidths(raw)
 
-  return `${value.toFixed(value >= 10 ? 0 : 1)}${units[unitIndex]}`
-}
-
-function getCounts(results: AnalyzerResult[]) {
-  return results.reduce(
-    (acc, result) => {
-      acc[result.status] += 1
-      return acc
-    },
-    { ok: 0, warning: 0, error: 0, skipped: 0 },
+  return raw.map((cells) =>
+    "  " +
+    cells
+      .map((cell, i) => {
+        const padded = cell.padEnd(widths[i] ?? 0)
+        const trimmed = padded.trimEnd()
+        const trail = padded.slice(trimmed.length)
+        return colorCell(trimmed, i, analyzer) + trail
+      })
+      .join("  ")
+      .trimEnd()
   )
 }
 
-function plural(value: number) {
-  return value === 1 ? "" : "s"
-}
-
-function sectionTitle(name: string) {
-  return color(`-- ${name} --`, "cyan", true)
-}
-
-function statusLabel(status: AnalyzerResult["status"]) {
-  switch (status) {
-    case "ok":
-      return color("[ok]", "green", true)
-    case "warning":
-      return color("[warn]", "yellow", true)
-    case "error":
-      return color("[err]", "red", true)
-    case "skipped":
-      return color("[skip]", "dim", true)
+function rawCells(item: AnalyzerItem, analyzer: string): string[] {
+  switch (analyzer) {
+    case "size":
+      return [item.name, item.sizeBytes ? formatBytes(item.sizeBytes) : ""]
+    case "outdated":
+      return [item.name, item.current ?? "", "→", item.latest ?? ""]
+    case "audit":
+      return [
+        item.name,
+        item.current ?? "",
+        item.severity ?? "",
+        (item.detail ?? "").split(" · ")[0] ?? "",
+      ]
+    default: // unused
+      return [item.name, item.current ?? ""]
   }
 }
 
-function color(
-  value: string,
-  tone: "magenta" | "cyan" | "green" | "yellow" | "red" | "white" | "dim",
-  bold = false,
-) {
-  const tones: Record<typeof tone, string> = {
-    magenta: "\u001b[35m",
-    cyan: "\u001b[36m",
-    green: "\u001b[32m",
-    yellow: "\u001b[33m",
-    red: "\u001b[31m",
-    white: "\u001b[37m",
-    dim: "\u001b[2m",
-  }
-
-  const reset = "\u001b[0m"
-  const prefix = `${bold ? "\u001b[1m" : ""}${tones[tone]}`
-  return `${prefix}${value}${reset}`
+function colWidths(rows: string[][]): number[] {
+  if (rows.length === 0 || !rows[0]) return []
+  return rows[0].map((_, i) => Math.max(...rows.map((r) => (r[i] ?? "").length)))
 }
+
+function colorCell(text: string, col: number, analyzer: string): string {
+  if (!text) return text
+  if (col === 0) return b(text)
+
+  switch (analyzer) {
+    case "size":
+      return col === 1 ? green(text) : dim(text)
+    case "outdated":
+      if (col === 1) return dim(text)
+      if (col === 2) return dim(text)
+      if (col === 3) return green(text)
+      return dim(text)
+    case "audit":
+      if (col === 2) return severityColor(text)
+      return dim(text)
+    default:
+      return dim(text)
+  }
+}
+
+/* ── formatting helpers ── */
+
+function formatBytes(bytes: number): string {
+  const units = ["B", "KB", "MB", "GB"]
+  let v = bytes
+  let u = 0
+  while (v >= 1024 && u < units.length - 1) { v /= 1024; u++ }
+  return `${v.toFixed(v >= 10 ? 0 : 1)} ${units[u]}`
+}
+
+function severityColor(s: string): string {
+  switch (s.toLowerCase()) {
+    case "critical": return red(s)
+    case "high":     return red(s)
+    case "moderate": return yellow(s)
+    case "low":      return dim(s)
+    default:         return yellow(s)
+  }
+}
+
+/* ── minimal ANSI ── */
+
+const R = "\x1b[0m"
+
+function b(s: string)      { return `\x1b[1m${s}${R}` }
+function dim(s: string)    { return `\x1b[2m${s}${R}` }
+function green(s: string)  { return `\x1b[32m${s}${R}` }
+function yellow(s: string) { return `\x1b[33m${s}${R}` }
+function red(s: string)    { return `\x1b[31m${s}${R}` }

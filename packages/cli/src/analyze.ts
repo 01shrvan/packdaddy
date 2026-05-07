@@ -13,11 +13,7 @@ export async function analyzeProject(
   config: ProjectConfig,
   scans: AnalyzerName[]
 ): Promise<ScanReport> {
-  const results: AnalyzerResult[] = []
-
-  for (const scan of scans) {
-    results.push(await runAnalyzer(scan, config))
-  }
+  const results = await Promise.all(scans.map((scan) => runAnalyzer(scan, config)))
 
   return {
     project: {
