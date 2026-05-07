@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Dependency cleanup CLI for modern JavaScript projects.",
   "bin": {
-    "packdaddy": "./dist/index.js"
+    "packdaddy": "dist/index.js"
   },
   "files": [
     "dist",

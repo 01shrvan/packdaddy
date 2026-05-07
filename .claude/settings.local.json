@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Shrvan Benke\\\\OneDrive\\\\Desktop\\\\projects\\\\packdaddy\" -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(pnpm --filter web dev)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(node packages/cli/dist/index.js --all)",
+      "Bash(node packages/cli/dist/index.js --cwd apps/web --all)",
+      "WebFetch(domain:magicwand.advtszn.xyz)",
+      "WebFetch(domain:axiom.co)"
+    ]
+  }
+}
