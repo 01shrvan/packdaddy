@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#0a0a0a"/>
+  <rect x="1" y="1" width="30" height="30" rx="5.5" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+  <text x="8"  y="14.5" font-family="monospace" font-size="9" font-weight="700" fill="#ef4444">×</text>
+  <text x="19" y="14.5" font-family="monospace" font-size="9" font-weight="700" fill="#eab308">↑</text>
+  <text x="7"  y="26"   font-family="monospace" font-size="8" font-weight="700" fill="#f97316">⚠</text>
+  <text x="19" y="26"   font-family="monospace" font-size="9" font-weight="700" fill="#3b82f6">≈</text>
+</svg>

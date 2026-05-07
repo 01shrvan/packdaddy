@@ -18,7 +18,11 @@
       "Bash(npm publish *)",
       "Bash(pnpm publish *)",
       "Bash(npm token *)",
-      "Bash(npm config *)"
+      "Bash(npm config *)",
+      "Bash(Get-ChildItem -Recurse \"C:\\\\Users\\\\Shrvan Benke\\\\OneDrive\\\\Desktop\\\\projects\\\\packdaddy\\\\apps\\\\web\" -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(Format-List)",
+      "Bash(pnpm --filter web build)"
     ]
   }
 }
