@@ -27,13 +27,16 @@ export async function runFix(config: ProjectConfig): Promise<void> {
     return
   }
 
+  const names = result.items.map((item) => item.name)
+
   const selected = await multiselect({
-    message: `${result.items.length} unused package${result.items.length !== 1 ? "s" : ""} found. Select to remove:`,
+    message: `${result.items.length} unused package${result.items.length !== 1 ? "s" : ""} found. Space to deselect, Enter to remove all:`,
     options: result.items.map((item) => ({
       value: item.name,
       label: item.name,
       hint: item.current,
     })),
+    initialValues: names,
     required: false,
   })
 
