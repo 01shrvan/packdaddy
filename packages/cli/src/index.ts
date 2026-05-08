@@ -3,6 +3,7 @@ import { intro, outro, spinner, log } from "@clack/prompts"
 import { parseArgs, getHelpText } from "./args.js"
 import { analyzeProject } from "./analyze.js"
 import { resolveConfig } from "./config.js"
+import { runFix } from "./fix.js"
 import { renderJson, renderResult } from "./report.js"
 
 async function main() {
@@ -14,7 +15,11 @@ async function main() {
   }
 
   if (args.fix) {
-    throw new Error("--fix is reserved until dependency removal is interactive.")
+    const config = await resolveConfig(args.cwd)
+    intro("packdaddy --fix")
+    await runFix(config)
+    outro("Done. Re-run packdaddy to verify.")
+    return
   }
 
   const config = await resolveConfig(args.cwd)

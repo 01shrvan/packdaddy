@@ -19,6 +19,8 @@ packdaddy runs up to four analyzers against your project and prints a clean repo
 | audit | `--audit` | Hits npm advisory API. Surfaces known CVEs. |
 | size | `--size` | Walks `node_modules`. Ranks heaviest packages by disk footprint. |
 
+Pass `--fix` to interactively remove unused packages after scanning.
+
 By default (no flags), **unused + outdated + size** run. Pass `--all` to run all four.
 
 ---
@@ -60,6 +62,7 @@ Options:
   --audit       Check npm advisory API for known CVEs
   --size        Estimate installed sizes from node_modules
   --all         Run every analyzer
+  --fix         Interactively remove unused dependencies
   --json        Print machine-readable JSON output
   --cwd <path>  Run against a specific directory (default: cwd)
   -h, --help    Show help
@@ -73,6 +76,9 @@ packdaddy
 
 # Full audit
 packdaddy --all
+
+# Interactively remove unused packages
+packdaddy --fix
 
 # Specific analyzers
 packdaddy --unused --size

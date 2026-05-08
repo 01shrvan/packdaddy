@@ -2,19 +2,29 @@
 
 Dependency cleanup CLI and landing page.
 
-## Local CLI testing
-
-`packdaddy` is not published to npm yet, so this will fail until release:
+## Quick start
 
 ```bash
-pnpm dlx packdaddy@latest
+npx packdaddy
+npx packdaddy --all
+npx packdaddy --fix
 ```
 
-Run the built CLI directly from this repo:
+Or with other package managers:
+
+```bash
+pnpm dlx packdaddy
+bunx packdaddy
+yarn dlx packdaddy
+```
+
+## Local development
+
+Build and run the CLI directly from this repo:
 
 ```bash
 pnpm --filter packdaddy build
-node packages/cli/dist/index.js --cwd "../align-dev" --unused --size
+node packages/cli/dist/index.js --cwd "../my-app" --unused --size
 ```
 
 Install the local build as a global command while developing:
@@ -22,11 +32,6 @@ Install the local build as a global command while developing:
 ```bash
 pnpm --filter packdaddy build
 pnpm --filter packdaddy link --global
-```
-
-Then run this inside any JavaScript project:
-
-```bash
 packdaddy --unused --outdated --size
 ```
 

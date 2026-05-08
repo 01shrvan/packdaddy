@@ -92,7 +92,7 @@ export function getHelpText() {
     "  --size            Estimate installed dependency sizes",
     "  --all             Run every analyzer",
     "  --json            Print machine-readable JSON",
-    "  --fix             Reserved for confirmed dependency removal",
+    "  --fix             Interactively remove unused dependencies",
     "  -h, --help        Show this help message",
     "",
     "Examples",
