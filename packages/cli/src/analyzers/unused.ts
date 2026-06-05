@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises"
 import { extname, resolve } from "node:path"
-import { IGNORED_SCAN_DIRS } from "../constants.js"
+import { IGNORED_SCAN_DIRS, KNOWN_TOOLING } from "../constants.js"
 import type {
   AnalyzerResult,
   PackageJsonShape,
@@ -40,9 +40,25 @@ export async function runUnusedAnalyzer(
     files.map(async (file) => readFile(file, "utf8").catch(() => ""))
   )
   const haystack = contents.join("\n")
-  const unused = deps.filter(
-    ([name]) => !isDependencyReferenced(name, haystack)
+
+  const scriptTokens = getScriptTokens(config.packageJson)
+  const binNamesByDep = new Map(
+    await Promise.all(
+      deps.map(
+        async ([name]) =>
+          [name, await getBinNames(config.root, name)] as const
+      )
+    )
   )
+
+  const unused = deps.filter(([name]) => {
+    if (isTypesPackage(name)) return false
+    if (KNOWN_TOOLING.has(name)) return false
+    if (isDependencyReferenced(name, haystack)) return false
+    if (isReferencedInScripts(name, binNamesByDep.get(name) ?? [], scriptTokens))
+      return false
+    return true
+  })
 
   return {
     name: "unused",
@@ -55,7 +71,7 @@ export async function runUnusedAnalyzer(
       name,
       current: version,
       detail:
-        "No import, require, or package-name reference found in source files.",
+        "No import, require, script, or package-name reference found.",
     })),
     warnings: [
       "Unused detection is a fast local heuristic. Run a full static analyzer before deleting critical packages.",
@@ -68,7 +84,73 @@ function getDependencyEntries(packageJson: PackageJsonShape) {
     ...packageJson.dependencies,
     ...packageJson.devDependencies,
     ...packageJson.optionalDependencies,
-  }).sort(([a], [b]) => a.localeCompare(b))
+  })
+    .filter(([, version]) => !isLocalVersion(version))
+    .sort(([a], [b]) => a.localeCompare(b))
+}
+
+function isLocalVersion(value: string) {
+  return (
+    value.startsWith("workspace:") ||
+    value.startsWith("file:") ||
+    value.startsWith("link:") ||
+    value.startsWith("patch:")
+  )
+}
+
+function isTypesPackage(name: string) {
+  return name.startsWith("@types/")
+}
+
+function getScriptTokens(packageJson: PackageJsonShape): Set<string> {
+  const text = Object.values(packageJson.scripts ?? {}).join(" \n ")
+  return new Set(text.split(/[^a-zA-Z0-9@/_-]+/).filter(Boolean))
+}
+
+function isReferencedInScripts(
+  name: string,
+  binNames: string[],
+  scriptTokens: Set<string>
+) {
+  if (scriptTokens.has(name)) return true
+  return binNames.some((bin) => scriptTokens.has(bin))
+}
+
+async function getBinNames(root: string, name: string): Promise<string[]> {
+  try {
+    const manifestPath = resolve(
+      packageDirectory(root, name),
+      "package.json"
+    )
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+      bin?: string | Record<string, string>
+    }
+
+    if (typeof manifest.bin === "string") {
+      return [unscopedName(name)]
+    }
+
+    if (manifest.bin && typeof manifest.bin === "object") {
+      return Object.keys(manifest.bin)
+    }
+
+    return []
+  } catch {
+    return []
+  }
+}
+
+function packageDirectory(root: string, name: string) {
+  if (!name.startsWith("@")) {
+    return resolve(root, "node_modules", name)
+  }
+
+  const [scope, packageName] = name.split("/")
+  return resolve(root, "node_modules", scope ?? "", packageName ?? "")
+}
+
+function unscopedName(name: string) {
+  return name.startsWith("@") ? (name.split("/")[1] ?? name) : name
 }
 
 async function listSourceFiles(directory: string): Promise<string[]> {

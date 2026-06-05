@@ -1,6 +1,6 @@
 {
   "name": "packdaddy",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "description": "Zero-dependency CLI to audit package.json — find unused, outdated, vulnerable, and heavy dependencies.",
   "keywords": [
@@ -41,8 +41,9 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "prepublishOnly": "tsc -p tsconfig.json",
+    "clean": "node scripts/clean.mjs",
+    "build": "node scripts/clean.mjs && tsc -p tsconfig.json",
+    "prepublishOnly": "node scripts/clean.mjs && tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "engines": {

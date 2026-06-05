@@ -34,7 +34,6 @@ export function renderResult(result: AnalyzerResult): void {
     return
   }
 
-  // warning — render items in a note box
   const lines: string[] = [dim(result.summary)]
 
   if (result.items.length > 0) {
@@ -55,8 +54,6 @@ export function renderResult(result: AnalyzerResult): void {
 
   note(lines.join("\n"), name)
 }
-
-/* ── table builder ── */
 
 function buildTable(items: AnalyzerItem[], analyzer: string): string[] {
   const MAX = 15
@@ -90,7 +87,7 @@ function rawCells(item: AnalyzerItem, analyzer: string): string[] {
         item.severity ?? "",
         (item.detail ?? "").split(" · ")[0] ?? "",
       ]
-    default: // unused
+    default:
       return [item.name, item.current ?? ""]
   }
 }
@@ -120,8 +117,6 @@ function colorCell(text: string, col: number, analyzer: string): string {
   }
 }
 
-/* ── formatting helpers ── */
-
 function formatBytes(bytes: number): string {
   const units = ["B", "KB", "MB", "GB"]
   let v = bytes
@@ -139,8 +134,6 @@ function severityColor(s: string): string {
     default:         return yellow(s)
   }
 }
-
-/* ── minimal ANSI ── */
 
 const R = "\x1b[0m"
 

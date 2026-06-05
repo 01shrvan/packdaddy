@@ -15,6 +15,7 @@ export interface CliArgs {
 export interface PackageJsonShape {
   name?: string
   packageManager?: string
+  scripts?: Record<string, string>
   dependencies?: Record<string, string>
   devDependencies?: Record<string, string>
   optionalDependencies?: Record<string, string>

@@ -132,7 +132,7 @@ packdaddy --all --json | jq '.results'
 
 ## How each analyzer works
 
-**unused** — reads every `.ts`, `.tsx`, `.js`, `.jsx`, `.vue`, `.svelte` file in your project (skipping `node_modules`, `.git`, `dist`, etc.) and checks if each package name appears in any import or require statement. Fast local heuristic — no AST parsing.
+**unused** — reads every `.ts`, `.tsx`, `.js`, `.jsx`, `.vue`, `.svelte` file in your project (skipping `node_modules`, `.git`, `dist`, etc.) and checks if each package name appears in any import or require statement. To avoid false positives it also keeps packages referenced in `package.json` scripts (by name or by their `bin` command, e.g. `typescript` → `tsc`), all `@types/*` packages, workspace/local-protocol packages, and common build tooling. Fast local heuristic — no AST parsing.
 
 **outdated** — fetches `https://registry.npmjs.org/<pkg>/latest` for each dependency and compares against the version declared in `package.json`. Works for all packages including scoped ones.
 

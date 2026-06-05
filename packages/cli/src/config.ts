@@ -53,7 +53,6 @@ async function detectPackageManager(
       await access(resolve(root, lockfile))
       return { packageManager, lockfile }
     } catch {
-      // Try the next lockfile.
     }
   }
 
